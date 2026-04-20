@@ -47,7 +47,7 @@ def render_dashboard():
             line_shape="spline",
             render_mode="svg"
         )
-        fig_progress.update_traces(line_color='#7c3aed', marker=dict(size=10, color='#white', line=dict(width=2, color='#7c3aed')))
+        fig_progress.update_traces(line_color='#7c3aed', marker=dict(size=10, color='white', line=dict(width=2, color='#7c3aed')))
         fig_progress.update_layout(
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
