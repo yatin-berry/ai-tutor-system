@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from backend.services.question_service import generate_quiz
 from backend.services.submit_service import submit_quiz
 from backend.services.dashboard_service import get_dashboard_data
@@ -14,6 +15,15 @@ from backend.models.schema import (
 from backend.services.auth_service import signup_user, login_user, get_current_user
 
 app = FastAPI()
+
+# Enable CORS for React Frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For development, allow all
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/auth/signup")

@@ -39,15 +39,9 @@ QUESTION TYPE RULES:
   * Only 1 correct answer
 - true_false:
   * Options must be ["True", "False"]
-- fill:
-  * Options must be []
-  * Correct answer must be short and exact
-- open:
-  * Options must be []
-  * Correct answer must be a concise model answer
 
 DISTRIBUTION:
-Generate a balanced mix of question types (mcq, true_false, fill, open) totaling exactly {num_questions} questions.
+Generate a balanced mix of mcq and true_false totaling exactly {num_questions} questions.
 
 OUTPUT FORMAT:
 [
@@ -64,7 +58,6 @@ IMPORTANT:
 - Every object must include:
   "question", "options", "correct_answer", "explanation", "type"
 - Explanation must clearly teach the concept in 1-3 lines
-- For fill and open questions, options must be []
 - Ensure the output is valid JSON
 
 INPUT:

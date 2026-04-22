@@ -1,0 +1,205 @@
+@import "tailwindcss";
+
+/* ============================================
+   TAILWIND V4 THEME TOKENS
+   All custom design tokens defined here
+   ============================================ */
+@theme {
+  /* Dark background scale */
+  --color-dark-950: #020308;
+  --color-dark-900: #0d0e15;
+  --color-dark-800: #171822;
+  --color-dark-700: #1e293b;
+
+  /* Brand colors */
+  --color-brand-primary: #818cf8;
+  --color-brand-secondary: #4f46e5;
+  --color-brand-glow: rgba(129, 140, 248, 0.4);
+
+  /* Animations */
+  --animate-fade-in: fadeIn 0.5s ease-out forwards;
+  --animate-slide-up: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  @keyframes fadeIn {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  @keyframes slideUp {
+    0%   { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #020308;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.025em;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+/* ============================================
+   COMPONENT UTILITIES
+   ============================================ */
+@layer components {
+
+  /* Glass cards */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+  }
+
+  .glass-card-premium {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 2.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
+    transition: all 0.5s ease;
+  }
+
+  .glass-card-premium:hover {
+    border-color: rgba(255, 255, 255, 0.20);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* Inputs */
+  .input-standard {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    color: white;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+
+  .input-standard::placeholder {
+    color: #475569;
+  }
+
+  .input-standard:focus {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.10);
+  }
+
+  /* Buttons */
+  .btn-primary {
+    background-color: #818cf8;
+    color: white;
+    font-weight: 900;
+    border-radius: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 25px -5px rgba(129, 140, 248, 0.3);
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-primary:hover {
+    background-color: #4f46e5;
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: white;
+    font-weight: 900;
+    border-radius: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.10);
+  }
+
+  .btn-secondary:active {
+    transform: scale(0.98);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #4f46e5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Container */
+  .container-custom {
+    max-width: 80rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-custom {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-custom {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+}
+
+/* ============================================
+   CUSTOM SCROLLBAR
+   ============================================ */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(129,140,248,0.2); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(129,140,248,0.4); }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #0d0e15; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+/* ============================================
+   MISC UTILITIES
+   ============================================ */
+.glow-shadow {
+  box-shadow: 0 0 30px rgba(129, 140, 248, 0.2);
+}
