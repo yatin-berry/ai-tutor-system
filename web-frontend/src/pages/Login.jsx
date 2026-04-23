@@ -85,7 +85,7 @@ const Login = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
               {error && (
                 <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-bold flex items-center gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
@@ -100,6 +100,7 @@ const Login = () => {
                    <input
                     type="email"
                     required
+                    autoComplete="off"
                     className="input-standard pl-12"
                     placeholder="name@example.com"
                     value={email}
@@ -115,6 +116,7 @@ const Login = () => {
                    <input
                     type="password"
                     required
+                    autoComplete="new-password"
                     className="input-standard pl-12"
                     placeholder="••••••••"
                     value={password}
