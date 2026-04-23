@@ -45,7 +45,8 @@ def generate_interview_question(role, level, previous_questions=None):
                 "role": "user",
                 "content": prompt
             }
-        ]
+        ],
+        max_tokens=1500
     )
 
     content = response.choices[0].message.content
@@ -180,7 +181,8 @@ def generate_interview_summary(role, results):
                 "role": "user",
                 "content": prompt
             }
-        ]
+        ],
+        max_tokens=1500
     )
 
     content = response.choices[0].message.content

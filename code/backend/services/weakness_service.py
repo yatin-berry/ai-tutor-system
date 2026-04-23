@@ -22,7 +22,8 @@ def detect_weakness(results):
             messages=[
                 {"role": "system", "content": "You are a strict JSON generator for weakness analysis."},
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            max_tokens=1500
         )
 
         content = response.choices[0].message.content

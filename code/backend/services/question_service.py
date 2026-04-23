@@ -46,7 +46,8 @@ def generate_quiz(subject, topic, level, num_questions=5):
             messages=[
                 {"role": "system", "content": "You are a strict JSON quiz generator. Return only valid JSON."},
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            max_tokens=1500
         )
 
         content = response.choices[0].message.content

@@ -21,7 +21,8 @@ def evaluate_with_ai(question, correct_answer, user_answer):
             messages=[
                 {"role": "system", "content": "You are a strict evaluator."},
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            max_tokens=1500
         )
 
         content = response.choices[0].message.content

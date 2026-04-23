@@ -16,12 +16,12 @@ import {
   MessageSquare
 } from 'lucide-react';
 
-const PageTransition = ({ children }) => (
+const PageTransition = ({ children, className = "max-w-4xl" }) => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -10 }}
-    className="max-w-4xl mx-auto h-full flex flex-col"
+    className={`${className} mx-auto h-full flex flex-col w-full flex-1`}
   >
     {children}
   </motion.div>
@@ -58,6 +58,7 @@ const Interview = () => {
       setCurrentStep('active');
     } catch (err) {
       console.error("Interview start failed", err);
+      alert("Failed to start the interview. Please check your connection or try again later.");
     } finally {
       setLoading(false);
     }
@@ -83,6 +84,7 @@ const Interview = () => {
       }
     } catch (err) {
       console.error("Answer submission failed", err);
+      alert("Failed to submit your answer. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -90,7 +92,7 @@ const Interview = () => {
 
 
   return (
-    <div className="h-[calc(100vh-120px)] py-6">
+    <div className="h-[calc(100vh-80px)] py-2 flex flex-col">
       <AnimatePresence mode="wait">
         {currentStep === 'setup' && (
           <PageTransition key="setup">
@@ -168,8 +170,8 @@ const Interview = () => {
         )}
 
         {currentStep === 'active' && (
-          <PageTransition key="active">
-            <div className="flex-1 glass-card-premium flex flex-col overflow-hidden h-[calc(100vh-220px)]">
+          <PageTransition key="active" className="max-w-6xl">
+            <div className="flex-1 glass-card-premium flex flex-col overflow-hidden h-full shadow-2xl">
                {/* Chat Header */}
                <div className="px-6 sm:px-10 py-6 border-b border-white/5 bg-white/[0.01] flex justify-between items-center shrink-0">
                   <div className="flex items-center gap-4">
