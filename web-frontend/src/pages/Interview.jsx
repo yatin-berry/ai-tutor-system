@@ -130,6 +130,19 @@ const Interview = () => {
                     ))}
                   </div>
                 </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-slate-400 flex items-center gap-2">
+                    <Sparkles size={14} className="text-brand-primary" /> Number of Questions
+                  </label>
+                  <input 
+                    type="number" 
+                    value={totalQuestions}
+                    onChange={(e) => setTotalQuestions(e.target.value)}
+                    min="1" max="15"
+                    className="input-standard"
+                  />
+                </div>
               </div>
 
               <div className="bg-brand-primary/5 p-6 rounded-2xl border border-brand-primary/10 flex gap-4">

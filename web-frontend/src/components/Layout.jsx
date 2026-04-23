@@ -32,12 +32,12 @@ const Layout = () => {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full p-4">
-      <div className="flex items-center gap-3 px-2 mb-10 h-10">
+      <Link to="/dashboard" className="flex items-center gap-3 px-2 mb-10 h-10 hover:opacity-80 transition-opacity" onClick={() => setIsMobileMenuOpen(false)}>
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-secondary to-purple-600 flex items-center justify-center shrink-0">
           <BrainCircuit size={18} className="text-white" />
         </div>
         {(isSidebarOpen || isMobileMenuOpen) && <span className="font-bold text-xl gradient-text">Mentra AI</span>}
-      </div>
+      </Link>
 
       <nav className="flex-1 space-y-2">
         {menuItems.map((item) => {
@@ -87,12 +87,12 @@ const Layout = () => {
     <div className="min-h-screen bg-dark-950 flex flex-col lg:flex-row text-slate-200">
       {/* Mobile Header */}
       <header className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-white/5 bg-dark-900/50 backdrop-blur-xl sticky top-0 z-40">
-        <div className="flex items-center gap-2">
+        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-secondary to-purple-600 flex items-center justify-center">
             <BrainCircuit size={18} className="text-white" />
           </div>
           <span className="font-bold text-lg gradient-text">Mentra AI</span>
-        </div>
+        </Link>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 hover:bg-white/5 rounded-lg text-slate-400"

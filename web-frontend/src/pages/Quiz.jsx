@@ -12,7 +12,8 @@ import {
   Sparkles,
   Trophy,
   BarChart3,
-  History
+  History,
+  ChevronDown
 } from 'lucide-react';
 
 const PageTransition = ({ children }) => (
@@ -31,6 +32,7 @@ const Quiz = () => {
   const [topic, setTopic] = useState('');
   const [level, setLevel] = useState('Beginner');
   const [numQuestions, setNumQuestions] = useState(5);
+  const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [quizData, setQuizData] = useState(null);
@@ -92,15 +94,38 @@ const Quiz = () => {
                   <label className="text-sm font-bold text-slate-400 flex items-center gap-2">
                     <Sparkles size={14} className="text-brand-primary" /> Select Subject
                   </label>
-                  <select 
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    className="input-standard cursor-pointer appearance-none"
-                  >
-                    {["Machine Learning", "Data Science", "Web Development", "Blockchain"].map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsSubjectDropdownOpen(!isSubjectDropdownOpen)}
+                      className="input-standard w-full flex items-center justify-between"
+                    >
+                      <span>{subject}</span>
+                      <ChevronDown size={20} className={`transition-transform duration-300 ${isSubjectDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    <AnimatePresence>
+                      {isSubjectDropdownOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute top-full left-0 right-0 mt-2 p-2 rounded-2xl bg-slate-900 border border-white/10 shadow-2xl shadow-black z-50 max-h-60 overflow-y-auto custom-scrollbar"
+                        >
+                          {["Machine Learning", "Data Science", "Web Development", "Blockchain", "Artificial Intelligence", "Cybersecurity"].map(s => (
+                            <button
+                              key={s}
+                              onClick={() => {
+                                setSubject(s);
+                                setIsSubjectDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-3 rounded-xl transition-colors ${subject === s ? 'bg-brand-primary/20 text-brand-primary font-bold' : 'text-slate-300 hover:bg-white/5'}`}
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -221,11 +246,25 @@ const Quiz = () => {
                               );
                             })}
                           </div>
+                        ) : q.type === 'fill' ? (
+                          <div className="space-y-4">
+                            <input
+                              type="text"
+                              placeholder="Type your exact answer here..."
+                              className="input-standard h-16 py-4 w-full"
+                              value={userAnswers[idx] || ''}
+                              onChange={(e) => handleSelectAnswer(idx, e.target.value)}
+                            />
+                            <div className="flex items-center gap-2 px-2">
+                               <Sparkles size={14} className="text-brand-primary" />
+                               <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Provide a short, exact word or phrase.</p>
+                            </div>
+                          </div>
                         ) : (
                           <div className="space-y-4">
                             <textarea
                               placeholder="Type your comprehensive answer here..."
-                              className="input-standard h-40 py-6 resize-none"
+                              className="input-standard h-40 py-6 resize-none w-full"
                               value={userAnswers[idx] || ''}
                               onChange={(e) => handleSelectAnswer(idx, e.target.value)}
                             />

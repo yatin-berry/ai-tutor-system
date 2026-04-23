@@ -126,18 +126,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="py-12 border-y border-white/5 bg-white/[0.01]">
-        <div className="container-custom">
-          <p className="text-center text-slate-500 font-bold uppercase tracking-[0.2em] text-xs mb-10">Trusted by students from world-class institutions</p>
-          <div className="flex flex-wrap justify-center items-center gap-10 md:gap-20 opacity-40 grayscale hover:grayscale-0 transition-all duration-500">
-             <div className="flex items-center gap-2 font-black text-2xl"><Globe size={32}/> MIT</div>
-             <div className="flex items-center gap-2 font-black text-2xl"><Users size={32}/> Stanford</div>
-             <div className="flex items-center gap-2 font-black text-2xl"><Zap size={32}/> Oxford</div>
-             <div className="flex items-center gap-2 font-black text-2xl"><Shield size={32}/> Harvard</div>
-          </div>
-        </div>
-      </section>
 
       {/* Features Grid */}
       <section id="features" className="py-32 bg-dark-950">

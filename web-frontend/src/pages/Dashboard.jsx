@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { dashboardService } from '../services/api';
-import { BrainCircuit, Mic2, Award, History, TrendingUp, Sparkles, ChevronRight } from 'lucide-react';
+import { BrainCircuit, Mic2, Award, History, TrendingUp, Sparkles, ChevronRight, BarChart2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { DashboardSkeleton } from '../components/Skeleton';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -15,6 +16,10 @@ const Dashboard = () => {
     const fetchStats = async () => {
       try {
         const data = await dashboardService.getStats();
+        // Reverse history for chart (oldest to newest)
+        if (data.recent_history) {
+            data.chart_history = [...data.recent_history].reverse();
+        }
         setStats(data);
       } catch (err) {
         console.error("Failed to fetch dashboard stats");
@@ -36,6 +41,18 @@ const Dashboard = () => {
   const item = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 }
+  };
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-slate-900 border border-white/10 p-4 rounded-xl shadow-xl">
+          <p className="text-slate-300 font-bold mb-1">{label}</p>
+          <p className="text-brand-primary font-black text-lg">Score: {payload[0].value}%</p>
+        </div>
+      );
+    }
+    return null;
   };
 
   if (loading) return <DashboardSkeleton />;
@@ -79,6 +96,93 @@ const Dashboard = () => {
             <div className="text-slate-500 text-sm font-bold uppercase tracking-widest">{stat.label}</div>
           </motion.div>
         ))}
+      </div>
+
+      {/* Performance Charts */}
+      <div className="grid lg:grid-cols-2 gap-8">
+        <motion.div variants={item} className="glass-card-premium p-8">
+           <h2 className="text-2xl font-black flex items-center gap-3 mb-8">
+            <BrainCircuit className="text-blue-400" size={24} /> Quiz Trend
+          </h2>
+          <div className="h-[300px] w-full">
+            {stats?.chart_history?.filter(h => h.type === 'quiz').length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.chart_history.filter(h => h.type === 'quiz')}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                  <XAxis dataKey="title" stroke="#ffffff40" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} />
+                  <YAxis stroke="#ffffff40" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} domain={[0, 100]} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#ffffff20', strokeWidth: 2 }} />
+                  <Line type="monotone" dataKey="score" stroke="#3b82f6" strokeWidth={4} dot={{ r: 6, fill: '#1e293b', strokeWidth: 3 }} activeDot={{ r: 8, stroke: '#3b82f6', strokeWidth: 2 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-500 font-bold">Not enough data to display trend.</div>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={item} className="glass-card-premium p-8">
+           <h2 className="text-2xl font-black flex items-center gap-3 mb-8">
+            <Mic2 className="text-purple-400" size={24} /> Interview Trend
+          </h2>
+          <div className="h-[300px] w-full">
+            {stats?.chart_history?.filter(h => h.type === 'interview').length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.chart_history.filter(h => h.type === 'interview')}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                  <XAxis dataKey="title" stroke="#ffffff40" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} />
+                  <YAxis stroke="#ffffff40" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} domain={[0, 100]} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#ffffff20', strokeWidth: 2 }} />
+                  <Line type="monotone" dataKey="score" stroke="#a855f7" strokeWidth={4} dot={{ r: 6, fill: '#1e293b', strokeWidth: 3 }} activeDot={{ r: 8, stroke: '#a855f7', strokeWidth: 2 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-500 font-bold">Not enough data to display trend.</div>
+            )}
+          </div>
+        </motion.div>
+        
+        <motion.div variants={item} className="glass-card-premium p-8">
+           <h2 className="text-2xl font-black flex items-center gap-3 mb-8">
+            <BarChart2 className="text-emerald-400" size={24} /> Subject Accuracy
+          </h2>
+          <div className="h-[300px] w-full">
+            {stats?.subject_stats?.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.subject_stats} barSize={40}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                  <XAxis dataKey="subject" stroke="#ffffff40" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} />
+                  <YAxis stroke="#ffffff40" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} domain={[0, 100]} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: '#ffffff05' }} />
+                  <Bar dataKey="average_accuracy" fill="#10b981" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-500 font-bold">No subject data available.</div>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={item} className="glass-card-premium p-8">
+           <h2 className="text-2xl font-black flex items-center gap-3 mb-8">
+            <BarChart2 className="text-amber-400" size={24} /> Role Performance
+          </h2>
+          <div className="h-[300px] w-full">
+            {stats?.role_stats?.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.role_stats} barSize={40}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                  <XAxis dataKey="role" stroke="#ffffff40" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} />
+                  <YAxis stroke="#ffffff40" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} domain={[0, 100]} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: '#ffffff05' }} />
+                  <Bar dataKey="average_score" fill="#fbbf24" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-500 font-bold">No role data available.</div>
+            )}
+          </div>
+        </motion.div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-12">
@@ -162,3 +266,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

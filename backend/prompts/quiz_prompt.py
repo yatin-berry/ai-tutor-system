@@ -1,3 +1,4 @@
+
 def build_quiz_prompt(subject, topic, level, num_questions=5):
     return f"""
 You are an expert AI Quiz Generator.
@@ -39,9 +40,16 @@ QUESTION TYPE RULES:
   * Only 1 correct answer
 - true_false:
   * Options must be ["True", "False"]
+- fill:
+  * Options must be []
+  * Correct answer must be short and exact
+- open:
+  * Options must be []
+  * Correct answer must be a concise model answer
 
 DISTRIBUTION:
-Generate a balanced mix of mcq and true_false totaling exactly {num_questions} questions.
+You MUST generate a mix of all four question types: mcq, true_false, fill, open.
+If num_questions >= 4, you MUST include at least one question of EVERY type.
 
 OUTPUT FORMAT:
 [
@@ -58,6 +66,7 @@ IMPORTANT:
 - Every object must include:
   "question", "options", "correct_answer", "explanation", "type"
 - Explanation must clearly teach the concept in 1-3 lines
+- For fill and open questions, options must be []
 - Ensure the output is valid JSON
 
 INPUT:

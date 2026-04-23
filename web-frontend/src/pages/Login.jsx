@@ -172,8 +172,8 @@ const Login = () => {
               <div className="mt-8 flex items-center justify-center gap-4">
                  <div className="w-10 h-10 rounded-full bg-white/10 border border-white/10" />
                  <div className="text-left">
-                    <div className="text-sm font-black">Alex Rivers</div>
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">Senior Dev at Vercel</div>
+                    <div className="text-sm font-black">Yatin Berry</div>
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">Software Engineer</div>
                  </div>
               </div>
            </motion.div>
