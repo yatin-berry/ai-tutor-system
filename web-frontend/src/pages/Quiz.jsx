@@ -13,7 +13,9 @@ import {
   Trophy,
   BarChart3,
   History,
-  ChevronDown
+  ChevronDown,
+  Target,
+  Lightbulb
 } from 'lucide-react';
 
 const PageTransition = ({ children }) => (
@@ -343,6 +345,43 @@ const Quiz = () => {
                    <div className="text-slate-500 font-black uppercase text-[10px] tracking-widest">XP Gained</div>
                 </div>
               </div>
+
+              {((result.weak_areas && result.weak_areas.length > 0) || (result.suggestions && result.suggestions.length > 0)) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+                  {result.weak_areas && result.weak_areas.length > 0 && (
+                    <div className="glass-card-premium p-8 border-red-500/20">
+                      <h3 className="text-2xl font-black flex items-center gap-3 mb-6">
+                        <Target className="text-red-400" size={28} /> 
+                        <span className="text-slate-100">Areas to Improve</span>
+                      </h3>
+                      <div className="flex flex-wrap gap-3">
+                        {result.weak_areas.map((area, i) => (
+                          <div key={i} className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold text-sm">
+                            {area}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {result.suggestions && result.suggestions.length > 0 && (
+                    <div className="glass-card-premium p-8 border-brand-primary/20">
+                      <h3 className="text-2xl font-black flex items-center gap-3 mb-6">
+                        <Lightbulb className="text-brand-primary" size={28} /> 
+                        <span className="text-slate-100">Actionable Suggestions</span>
+                      </h3>
+                      <ul className="space-y-4">
+                        {result.suggestions.map((suggestion, i) => (
+                          <li key={i} className="flex items-start gap-3 text-slate-300">
+                            <Sparkles className="text-brand-primary shrink-0 mt-0.5" size={16} />
+                            <span className="leading-relaxed">{suggestion}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-8 mb-16">
                  <h3 className="text-3xl font-black flex items-center gap-4 px-2">

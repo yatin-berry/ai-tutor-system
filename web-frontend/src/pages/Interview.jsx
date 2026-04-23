@@ -13,7 +13,10 @@ import {
   Trophy,
   History,
   Info,
-  MessageSquare
+  MessageSquare,
+  Target,
+  Lightbulb,
+  Zap
 } from 'lucide-react';
 
 const PageTransition = ({ children, className = "max-w-4xl" }) => (
@@ -37,6 +40,8 @@ const Interview = () => {
   const [currentStep, setCurrentStep] = useState('setup'); // setup, active, completed
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [chatHistory, setChatHistory] = useState([]); // [{type: 'ai'|'user', content: string}]
+  const [finalSummary, setFinalSummary] = useState(null);
+  const [finalResult, setFinalResult] = useState(null);
   
   const chatEndRef = useRef(null);
 
@@ -77,6 +82,8 @@ const Interview = () => {
       const data = await interviewService.submitAnswer(session.session_id, answerToSubmit);
       
       if (data.is_completed) {
+        setFinalSummary(data.final_summary);
+        setFinalResult(data);
         setChatHistory(prev => [...prev, { type: 'ai', content: data.final_summary?.summary || "Session completed. Great job!" }]);
         setCurrentStep('completed');
       } else {
@@ -266,6 +273,21 @@ const Interview = () => {
                     <Trophy size={48} className="text-emerald-500" />
                   </motion.div>
                   <h1 className="text-5xl sm:text-7xl font-black mb-6 tracking-tighter">Session <span className="gradient-text">Complete.</span></h1>
+                  
+                  {finalResult && (
+                    <div className="flex flex-col items-center mb-8">
+                       <div className="text-9xl font-black tracking-tighter mb-4">{Math.round(finalResult.average_score * 100)}%</div>
+                       <div className="h-1.5 w-40 bg-white/5 rounded-full overflow-hidden mb-4">
+                          <motion.div 
+                             initial={{ width: 0 }}
+                             animate={{ width: `${Math.round(finalResult.average_score * 100)}%` }}
+                             className="h-full bg-emerald-500 shadow-[0_0_15px_#10b981]"
+                          />
+                       </div>
+                       <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-xs">Interview Score</p>
+                    </div>
+                  )}
+
                   <p className="text-slate-400 text-xl font-medium">Your coach has analyzed your session performance.</p>
                </div>
 
@@ -288,6 +310,59 @@ const Interview = () => {
                       </div>
                     ))}
                   </div>
+
+                  {finalSummary && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+                      {finalSummary.strengths && finalSummary.strengths.length > 0 && (
+                        <div className="glass-card-premium p-8 border-emerald-500/20 md:col-span-2">
+                          <h3 className="text-2xl font-black flex items-center gap-3 mb-6">
+                            <Zap className="text-emerald-400" size={28} /> 
+                            <span className="text-slate-100">Key Strengths</span>
+                          </h3>
+                          <div className="flex flex-wrap gap-3">
+                            {finalSummary.strengths.map((strength, i) => (
+                              <div key={i} className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-sm">
+                                {strength}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {finalSummary.weaknesses && finalSummary.weaknesses.length > 0 && (
+                        <div className="glass-card-premium p-8 border-red-500/20">
+                          <h3 className="text-2xl font-black flex items-center gap-3 mb-6">
+                            <Target className="text-red-400" size={28} /> 
+                            <span className="text-slate-100">Areas to Improve</span>
+                          </h3>
+                          <div className="flex flex-wrap gap-3">
+                            {finalSummary.weaknesses.map((area, i) => (
+                              <div key={i} className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold text-sm">
+                                {area}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {finalSummary.suggestions && finalSummary.suggestions.length > 0 && (
+                        <div className="glass-card-premium p-8 border-brand-primary/20">
+                          <h3 className="text-2xl font-black flex items-center gap-3 mb-6">
+                            <Lightbulb className="text-brand-primary" size={28} /> 
+                            <span className="text-slate-100">Actionable Suggestions</span>
+                          </h3>
+                          <ul className="space-y-4">
+                            {finalSummary.suggestions.map((suggestion, i) => (
+                              <li key={i} className="flex items-start gap-3 text-slate-300">
+                                <Sparkles className="text-brand-primary shrink-0 mt-0.5" size={16} />
+                                <span className="leading-relaxed">{suggestion}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="mt-16 pt-12 border-t border-white/5 flex flex-col sm:flex-row gap-6">
                      <button onClick={() => setCurrentStep('setup')} className="flex-1 btn-primary py-6 text-xl font-black shadow-xl shadow-brand-primary/20">New Simulation</button>
