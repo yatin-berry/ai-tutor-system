@@ -1,5 +1,8 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+import shutil
+import tempfile
+import os
 from backend.services.question_service import generate_quiz
 from backend.services.submit_service import submit_quiz
 from backend.services.dashboard_service import get_dashboard_data
@@ -13,6 +16,7 @@ from backend.models.schema import (
     UserLogin
 )
 from backend.services.auth_service import signup_user, login_user, get_current_user
+from backend.services.resume_service import process_resume, get_resume_metadata, delete_user_resume
 
 app = FastAPI()
 
@@ -74,3 +78,49 @@ def start_interview_api(data: InterviewStartRequest, user_id: str = Depends(get_
 @app.post("/submit-interview-answer")
 def submit_interview_answer_api(data: InterviewAnswerRequest, user_id: str = Depends(get_current_user)):
     return submit_interview_answer(data.session_id, data.answer)
+
+
+@app.post("/upload-resume")
+async def upload_resume_api(file: UploadFile = File(...), user_id: str = Depends(get_current_user)):
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+    
+    temp_path = None
+    try:
+        suffix = os.path.splitext(file.filename)[1]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+            shutil.copyfileobj(file.file, temp_file)
+            temp_path = temp_file.name
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save temporary file: {str(e)}")
+        
+    try:
+        metadata = process_resume(user_id, temp_path, file.filename)
+        return {"status": "success", "metadata": metadata}
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+
+@app.get("/resume-metadata")
+def get_resume_metadata_api(user_id: str = Depends(get_current_user)):
+    try:
+        return get_resume_metadata(user_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/resume")
+def delete_resume_api(user_id: str = Depends(get_current_user)):
+    try:
+        success = delete_user_resume(user_id)
+        return {"status": "success", "deleted": success}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

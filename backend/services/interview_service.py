@@ -9,6 +9,7 @@ from backend.prompts.interview_prompt import build_interview_question_prompt
 from backend.prompts.interview_summary_prompt import build_interview_summary_prompt
 from backend.services.evaluation_service import evaluate_with_ai
 from backend.services.db_services import save_interview_attempt
+from backend.services.resume_service import retrieve_context
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
@@ -31,8 +32,15 @@ def _extract_json_content(text: str):
     return cleaned
 
 
-def generate_interview_question(role, level, previous_questions=None):
-    prompt = build_interview_question_prompt(role, level, previous_questions)
+def generate_interview_question(role, level, previous_questions=None, user_id=None, chat_history=None):
+    resume_context = None
+    if user_id:
+        try:
+            resume_context = retrieve_context(user_id, role)
+        except Exception as e:
+            print("ERROR RETRIEVING RESUME CONTEXT:", str(e))
+
+    prompt = build_interview_question_prompt(role, level, previous_questions, resume_context, chat_history)
 
     response = client.chat.completions.create(
         model="deepseek/deepseek-chat",
@@ -59,7 +67,7 @@ def generate_interview_question(role, level, previous_questions=None):
 def start_interview(role, level, user_id, total_questions=3):
     session_id = str(uuid.uuid4())
 
-    first_question = generate_interview_question(role, level, [])
+    first_question = generate_interview_question(role, level, [], user_id)
 
     interview_sessions[session_id] = {
         "user_id": user_id,
@@ -149,10 +157,16 @@ def submit_interview_answer(session_id, answer):
         }
 
     # else next question
+    chat_history = ""
+    for item in session["results"]:
+        chat_history += f"Interviewer: {item.get('question')}\nCandidate: {item.get('user_answer')}\n"
+
     next_question = generate_interview_question(
         session["role"],
         session["level"],
-        session["questions"]
+        session["questions"],
+        session["user_id"],
+        chat_history
     )
 
     session["questions"].append(next_question)

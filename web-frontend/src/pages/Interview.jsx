@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { interviewService } from '../services/api';
+import { interviewService, resumeService } from '../services/api';
 import { 
   Mic2, 
   Settings2, 
@@ -16,7 +16,10 @@ import {
   MessageSquare,
   Target,
   Lightbulb,
-  Zap
+  Zap,
+  Upload,
+  FileText,
+  Trash2
 } from 'lucide-react';
 
 const PageTransition = ({ children, className = "max-w-4xl" }) => (
@@ -42,6 +45,74 @@ const Interview = () => {
   const [chatHistory, setChatHistory] = useState([]); // [{type: 'ai'|'user', content: string}]
   const [finalSummary, setFinalSummary] = useState(null);
   const [finalResult, setFinalResult] = useState(null);
+
+  const [resumeMetadata, setResumeMetadata] = useState(null);
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [uploadSuccess, setUploadSuccess] = useState('');
+
+  useEffect(() => {
+    const fetchResumeMetadata = async () => {
+      try {
+        const data = await resumeService.getMetadata();
+        if (data && data.filename) {
+          setResumeMetadata(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch resume metadata:", err);
+      }
+    };
+    fetchResumeMetadata();
+  }, []);
+
+  const handleResumeUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setUploadError("Only PDF format is supported.");
+      setUploadSuccess('');
+      return;
+    }
+
+    setUploadingResume(true);
+    setUploadError('');
+    setUploadSuccess('');
+
+    try {
+      const response = await resumeService.uploadResume(file);
+      if (response.status === 'success') {
+        setResumeMetadata(response.metadata);
+        setUploadSuccess("Resume uploaded and parsed successfully!");
+      } else {
+        setUploadError("Failed to upload resume.");
+      }
+    } catch (err) {
+      console.error(err);
+      setUploadError(err.response?.data?.detail || "Error uploading resume.");
+    } finally {
+      setUploadingResume(false);
+    }
+  };
+
+  const handleDeleteResume = async () => {
+    if (!window.confirm("Are you sure you want to remove your uploaded resume?")) return;
+    
+    setLoading(true);
+    try {
+      const response = await resumeService.deleteResume();
+      if (response.status === 'success') {
+        setResumeMetadata(null);
+        setUploadSuccess('');
+        setUploadError('');
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete resume.");
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const chatEndRef = useRef(null);
 
@@ -152,6 +223,62 @@ const Interview = () => {
                     className="input-standard"
                   />
                 </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-slate-400 flex items-center gap-2">
+                    <FileText size={14} className="text-brand-primary" /> Upload Resume (Optional PDF)
+                  </label>
+                  
+                  {resumeMetadata && resumeMetadata.filename ? (
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                      <div className="flex items-center gap-2 overflow-hidden mr-2">
+                        <FileText size={18} className="text-brand-primary shrink-0" />
+                        <span className="text-sm font-semibold truncate text-slate-200" title={resumeMetadata.filename}>
+                          {resumeMetadata.filename}
+                        </span>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={handleDeleteResume}
+                        className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/25 transition-all shrink-0"
+                        title="Remove resume"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative flex items-center justify-center border border-dashed border-slate-700 rounded-xl p-3 bg-slate-950/40 hover:border-brand-primary transition-all">
+                      {uploadingResume ? (
+                        <div className="flex items-center gap-2 text-slate-400 text-sm font-semibold">
+                          <Loader2 size={16} className="animate-spin text-brand-primary" />
+                          Parsing resume...
+                        </div>
+                      ) : (
+                        <label className="flex items-center gap-2 cursor-pointer text-slate-400 hover:text-slate-200 text-sm font-semibold w-full justify-center py-1">
+                          <Upload size={16} className="text-slate-500" />
+                          <span>Choose PDF Resume</span>
+                          <input 
+                            type="file" 
+                            accept=".pdf" 
+                            onChange={handleResumeUpload}
+                            className="hidden" 
+                          />
+                        </label>
+                      )}
+                    </div>
+                  )}
+                  {uploadSuccess && <p className="text-[11px] text-emerald-400 font-bold mt-1">{uploadSuccess}</p>}
+                  {uploadError && <p className="text-[11px] text-red-400 font-bold mt-1">{uploadError}</p>}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-900/60 border border-white/5">
+                <div className={`w-2.5 h-2.5 rounded-full ${resumeMetadata && resumeMetadata.filename ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                <span className="text-sm font-semibold text-slate-300">
+                  {resumeMetadata && resumeMetadata.filename 
+                    ? `Interview will be personalized using your uploaded resume (${resumeMetadata.filename}).` 
+                    : "No resume uploaded. Interview will be role-based."}
+                </span>
               </div>
 
               <div className="bg-brand-primary/5 p-6 rounded-2xl border border-brand-primary/10 flex gap-4">
@@ -194,6 +321,15 @@ const Interview = () => {
                     <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Live Analysis
                   </div>
                </div>
+
+                <div className="px-6 sm:px-10 py-3 bg-brand-primary/5 border-b border-white/5 text-xs font-semibold text-slate-400 flex items-center gap-2 shrink-0">
+                  <Info size={14} className="text-brand-primary shrink-0" />
+                  <span>
+                    {resumeMetadata && resumeMetadata.filename 
+                      ? `Interview will be personalized using your uploaded resume: ${resumeMetadata.filename}.` 
+                      : "No resume uploaded. Interview will be role-based."}
+                  </span>
+                </div>
 
                {/* Chat Area */}
                <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-8 custom-scrollbar">
