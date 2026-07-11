@@ -1,204 +1,157 @@
-from openai import OpenAI
 import os
 import json
-import re
-import uuid
-from dotenv import load_dotenv
+import shutil
 
-from backend.prompts.interview_prompt import build_interview_question_prompt
-from backend.prompts.interview_summary_prompt import build_interview_summary_prompt
-from backend.services.evaluation_service import evaluate_with_ai
-from backend.services.db_services import save_interview_attempt
-from backend.services.resume_service import retrieve_context
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
-
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    base_url="https://openrouter.ai/api/v1"
+DB_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "resume_db")
 )
 
-# in-memory session store for now
-interview_sessions = {}
+# -----------------------------
+# Lazy Load Embedding Model
+# -----------------------------
+embeddings = None
 
 
-def _extract_json_content(text: str):
-    cleaned = re.sub(r"```json|```", "", text).strip()
+def get_embeddings():
+    global embeddings
 
-    object_match = re.search(r"\{.*\}", cleaned, re.DOTALL)
-    if object_match:
-        return object_match.group(0)
-
-    return cleaned
-
-
-def generate_interview_question(role, level, previous_questions=None, user_id=None, chat_history=None):
-    resume_context = None
-    if user_id:
-        try:
-            resume_context = retrieve_context(user_id, role)
-        except Exception as e:
-            print("ERROR RETRIEVING RESUME CONTEXT:", str(e))
-
-    prompt = build_interview_question_prompt(role, level, previous_questions, resume_context, chat_history)
-
-    response = client.chat.completions.create(
-        model="deepseek/deepseek-chat",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a strict JSON interview question generator."
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        max_tokens=1500
-    )
-
-    content = response.choices[0].message.content
-    extracted = _extract_json_content(content)
-    parsed = json.loads(extracted)
-
-    return parsed["question"]
-
-
-def start_interview(role, level, user_id, total_questions=3):
-    session_id = str(uuid.uuid4())
-
-    first_question = generate_interview_question(role, level, [], user_id)
-
-    interview_sessions[session_id] = {
-        "user_id": user_id,
-        "role": role,
-        "level": level,
-        "total_questions": total_questions,
-        "current_index": 0,
-        "questions": [first_question],
-        "results": []
-    }
-
-    return {
-        "status": "success",
-        "session_id": session_id,
-        "question_number": 1,
-        "question": first_question,
-        "is_completed": False
-    }
-
-
-def submit_interview_answer(session_id, answer):
-    if session_id not in interview_sessions:
-        return {
-            "status": "error",
-            "message": "Invalid interview session"
-        }
-
-    session = interview_sessions[session_id]
-    current_question = session["questions"][session["current_index"]]
-
-    # AI-based evaluation
-    eval_result = evaluate_with_ai(
-        current_question,
-        "A strong role-appropriate answer covering the key concept clearly.",
-        answer
-    )
-
-    score = eval_result.get("score", 0)
-    feedback = eval_result.get("feedback", "No feedback")
-
-    session["results"].append({
-        "question": current_question,
-        "user_answer": answer,
-        "score": score,
-        "feedback": feedback
-    })
-
-    session["current_index"] += 1
-
-    # if completed
-    if session["current_index"] >= session["total_questions"]:
-        summary = generate_interview_summary(
-            session["role"],
-            session["results"]
+    if embeddings is None:
+        embeddings = HuggingFaceEmbeddings(
+            model_name="all-MiniLM-L6-v2"
         )
 
-        total_score = sum(item.get("score", 0) for item in session["results"])
-        average_score = round(total_score / len(session["results"]), 2) if session["results"] else 0
+    return embeddings
 
-        interview_data = {
-            "user_id": session["user_id"],
-            "role": session["role"],
-            "level": session["level"],
-            "questions": session["questions"],
-            "answers": [item.get("user_answer") for item in session["results"]],
-            "results": session["results"],
-            "total_score": total_score,
-            "average_score": average_score,
-            "summary": summary.get("summary", ""),
-            "strengths": summary.get("strengths", []),
-            "weaknesses": summary.get("weaknesses", []),
-            "suggestions": summary.get("suggestions", [])
-        }
 
+def get_user_db_path(user_id: str) -> str:
+    return os.path.join(DB_DIR, user_id)
+
+
+def get_resume_metadata(user_id: str) -> dict:
+    user_dir = get_user_db_path(user_id)
+    metadata_path = os.path.join(user_dir, "metadata.json")
+
+    if os.path.exists(metadata_path):
         try:
-            save_interview_attempt(interview_data)
+            with open(metadata_path, "r", encoding="utf-8") as f:
+                return json.load(f)
         except Exception as e:
-            print("INTERVIEW DB SAVE ERROR:", str(e))
+            print(f"Error reading metadata: {e}")
 
-        return {
-            "status": "success",
-            "is_completed": True,
-            "results": session["results"],
-            "final_summary": summary,
-            "total_score": total_score,
-            "average_score": average_score
-        }
+    return {"filename": None}
 
-    # else next question
-    chat_history = ""
-    for item in session["results"]:
-        chat_history += f"Interviewer: {item.get('question')}\nCandidate: {item.get('user_answer')}\n"
 
-    next_question = generate_interview_question(
-        session["role"],
-        session["level"],
-        session["questions"],
-        session["user_id"],
-        chat_history
+def process_resume(user_id: str, temp_pdf_path: str, original_filename: str) -> dict:
+    user_dir = get_user_db_path(user_id)
+    os.makedirs(user_dir, exist_ok=True)
+
+    # -----------------------------
+    # Load PDF
+    # -----------------------------
+    try:
+        loader = PyPDFLoader(temp_pdf_path)
+        pages = loader.load()
+    except Exception as e:
+        raise ValueError(f"Failed to read PDF: {str(e)}")
+
+    if not pages or all(not page.page_content.strip() for page in pages):
+        raise ValueError(
+            "The PDF contains no extractable text."
+        )
+
+    # -----------------------------
+    # Split Text
+    # -----------------------------
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=150
     )
 
-    session["questions"].append(next_question)
+    chunks = splitter.split_documents(pages)
 
-    return {
-        "status": "success",
-        "is_completed": False,
-        "question_number": session["current_index"] + 1,
-        "question": next_question,
-        "last_feedback": feedback,
-        "last_score": score
+    if not chunks:
+        raise ValueError("No text chunks generated.")
+
+    # -----------------------------
+    # Build Vector Store
+    # -----------------------------
+    try:
+        db = FAISS.from_documents(
+            chunks,
+            get_embeddings()
+        )
+
+        db.save_local(user_dir)
+
+    except Exception as e:
+        raise RuntimeError(
+            f"Embedding generation failed: {str(e)}"
+        )
+
+    # -----------------------------
+    # Save Metadata
+    # -----------------------------
+    metadata = {
+        "filename": original_filename,
+        "chunk_count": len(chunks)
     }
 
+    with open(
+        os.path.join(user_dir, "metadata.json"),
+        "w",
+        encoding="utf-8",
+    ) as f:
+        json.dump(metadata, f, indent=4)
 
-def generate_interview_summary(role, results):
-    prompt = build_interview_summary_prompt(results, role)
+    return metadata
 
-    response = client.chat.completions.create(
-        model="deepseek/deepseek-chat",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a strict JSON interview analyst."
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        max_tokens=1500
-    )
 
-    content = response.choices[0].message.content
-    extracted = _extract_json_content(content)
-    return json.loads(extracted)
+def retrieve_context(user_id: str, query: str):
+    user_dir = get_user_db_path(user_id)
+
+    if not os.path.exists(
+        os.path.join(user_dir, "index.faiss")
+    ):
+        return None
+
+    try:
+        db = FAISS.load_local(
+            user_dir,
+            get_embeddings(),
+            allow_dangerous_deserialization=True,
+        )
+
+        retriever = db.as_retriever(
+            search_type="similarity",
+            search_kwargs={"k": 4},
+        )
+
+        docs = retriever.invoke(query)
+
+        return "\n\n".join(
+            doc.page_content
+            for doc in docs
+        )
+
+    except Exception as e:
+        print(f"Retrieval error: {e}")
+        return None
+
+
+def delete_user_resume(user_id: str) -> bool:
+    user_dir = get_user_db_path(user_id)
+
+    if os.path.exists(user_dir):
+        try:
+            shutil.rmtree(user_dir)
+            return True
+        except Exception as e:
+            print(f"Delete error: {e}")
+            return False
+
+    return False
